@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wetter App</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    input {
+      padding: 8px;
+      font-size: 16px;
+    }
+    button {
+      padding: 8px 12px;
+      font-size: 16px;
+      margin-left: 8px;
+      cursor: pointer;
+    }
+    p.error {
+      color: red;
+    }
+    .weather-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .weather-details {
+      text-align: left;
+    }
+    img.weather-icon {
+      width: 80px;
+      height: 80px;
+    }
+    #current-date, #current-time {
+      font-size: 16px;
+      color: #555;
+      margin-bottom: 5px;
+      background-color: rgba(154, 248, 248, 0.199);
+      padding: 5px;
+      border-radius: 5px;
+      display: inline-block;
+      min-width: 100px;
+    }
+    footer {
+      margin-top: 50px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="module">
+    import React, { useState, useEffect } from "https://esm.sh/react";
+    import { createRoot } from "https://esm.sh/react-dom/client";
+    import axios from "https://esm.sh/axios";
+
+    function WeatherApp() {
+      const [inputCity, setInputCity] = useState("");
+      const [weatherData, setWeatherData] = useState(null);
+      const [error, setError] = useState(null);
+      const [currentTime, setCurrentTime] = useState("");
+      const [currentDate, setCurrentDate] = useState("");
+      const [isCelsius, setIsCelsius] = useState(true);
+
+      useEffect(() => {
+        function updateTime() {
+          const now = new Date();
+          const hours = now.getHours().toString().padStart(2, "0");
+          const minutes = now.getMinutes().toString().padStart(2, "0");
+          setCurrentTime(`${hours}:${minutes}`);
+        }
+
+        function updateDate() {
+          const now = new Date();
+          const day = now.getDate().toString().padStart(2, "0");
+          const month = (now.getMonth() + 1).toString().padStart(2, "0");
+          const year = now.getFullYear();
+          setCurrentDate(`${day}.${month}.${year}`);
+        }
+
+        updateTime();
+        updateDate();
+
+        const interval = setInterval(updateTime, 30000);
+        return () => clearInterval(interval);
+      }, []);
+
+      const search = () => {
+        if (inputCity.trim() === "") {
+          alert("Please insert city name!");
+          return;
+        }
+
+        const apiKey = "96ad27349a64ea1dcdfbe6f4d458c085";
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${inputCity}&appid=${apiKey}&units=metric`;
+
+        axios.get(url)
+          .then(response => {
+            setWeatherData(response.data);
+            setError(null);
+          })
+          .catch(() => {
+            setError("City not found or API error");
+            setWeatherData(null);
+          });
+      };
+
+      const toggleUnit = () => setIsCelsius(!isCelsius);
+
+      const convertTemp = (tempCelsius) => isCelsius
+        ? `${tempCelsius.toFixed(1)}°C`
+        : `${((tempCelsius * 9) / 5 + 32).toFixed(1)}°F`;
+
+      return React.createElement(
+        "div",
+        null,
+        React.createElement("p", { id: "current-date" }, `${currentDate}`),
+        React.createElement("p", { id: "current-time" }, `${currentTime}`),
+        React.createElement("h2", null, "Weather search engine"),
+        React.createElement("input", {
+          type: "text",
+          placeholder: "city name",
+          value: inputCity,
+          onChange: (e) => setInputCity(e.target.value)
+        }),
+        React.createElement("button", { onClick: search }, "Search"),
+
+        error && React.createElement("p", { className: "error" }, error),
+
+        weatherData && !error && React.createElement(
+          "div",
+          { className: "weather-container" },
+          [
+            React.createElement("img", {
+              key: "icon",
+              className: "weather-icon",
+              src: `https://openweathermap.org/img/wn/${weatherData.weather[0].icon}@2x.png`,
+              alt: weatherData.weather[0].description
+            }),
+            React.createElement("div", { className: "weather-details", key: "details" }, [
+              React.createElement("p", { key: "temp" }, `Temperature: ${convertTemp(weatherData.main.temp)}`),
+              React.createElement("p", { key: "city" }, `City: ${weatherData.name}`),
+              React.createElement("p", { key: "humidity" }, `Humidity: ${weatherData.main.humidity}%`),
+              React.createElement("p", { key: "wind" }, `Wind Speed: ${weatherData.wind.speed} m/s`),
+              React.createElement("p", { key: "description" },
+                `${weatherData.weather[0].main} – ${weatherData.weather[0].description}`),
+              React.createElement("button", { onClick: toggleUnit, key: "toggle" },
+                isCelsius ? "Switch to °F" : "Switch to °C")
+            ])
+          ]
+        )
+      );
+    }
+
+    const root = createRoot(document.getElementById("root"));
+    root.render(React.createElement(WeatherApp));
+  </script>
+
+  <footer>
+    <a href="https://github.com/FatimaamitaF/weatherajax" target="_blank">Github Repository ❤️</a>
+  </footer>
+</body>
+</html>
+
